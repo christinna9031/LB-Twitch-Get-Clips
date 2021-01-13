@@ -1,0 +1,242 @@
+[extension_name]
+Get a top clip
+[insert_external]
+<div><p>Twitch Get Clips extension is installed.</p></div>
+<!--
+ * @name: Twitch Get Clips, @version: 1.3, @author: Christinna#9031
+ * @link: https://discord.com/channels/699319482442711072/712274509389889618/768990119918043136
+ * -->
+[insert_command]
+lioranboardclient.send('{"type":"MESSAGE","topic":"ExtensionCommand","name":"Twitch Get Clips","boxcount":4,"boxname1":"broadcaster_name","boxtype1":"string", "boxname2":"oauth_token","boxtype2":"string","boxname3":"amount","boxtype3":"string","boxname4":"variable","boxtype4":"string"}');
+[insert_hook]
+case "TwitchGetClips":{	LBGetTopClip(LioranBoardJSON.oauth_token,LioranBoardJSON.broadcaster_name,LioranBoardJSON.amount,LioranBoardJSON.variable)
+}break
+[insert_script]
+function LBGetTopClip(oauthtoken, broadcastername, amount, variable) {
+  for (let i = 0; i < 16; i++) {
+    lioranboardclient.send('{"type":"MESSAGE","topic":"RemoveStack","name":"' + variable + '","position":"top"}')
+  }
+
+  if (amount == 0) {
+    amount = 1 //if someone requests 0 clips, it auto defaults to 1
+  } else if (amount > 15) {
+    amount = 15 //if someone requests more than 15 clips, change it back to 15
+  }
+
+  //function to execute when various errors come up
+  function LBError(msg) {
+    msg = "Top Clip Extension: " + msg
+    lioranboardclient.send('{"type":"MESSAGE","topic":"SetValue","valuename":"' + variable + '","value":"error","real":false}')
+    lioranboardclient.send('{"type":"MESSAGE","topic":"AlertMessage","message":"' + msg + '"}')
+  }
+
+  //send request to Twitch to fetch the broadcaster's ID
+  const fetchID = fetch('https://api.twitch.tv/helix/users?login=' + broadcastername, {
+    'headers': {
+      'Client-ID': TWITCH_CLIENT_ID,
+      'Authorization': `Bearer ${oauthtoken}`
+    }
+  });
+
+  //handle Twitch response and errors
+  fetchID.then(response => {
+      if (response.status == 200) {
+        return ((response.json()))
+      } else if (response.status == 401) {
+        LBError("Error. Bad OAuth token.")
+        return ("error")
+      } else {
+        LBError("Error. User ID not found or Twitch server unavailable.")
+        return ("error")
+      }
+    })
+
+    .then(data => {
+      //console.log(data)
+      if (data !== "error") {
+        if (data.data.length > 0) {
+          let user_id = data.data[0].id
+          getvideos(user_id)
+        } else {
+          LBError("User not found.")
+        }
+      }
+    });
+
+  //send request to Twitch for x amount of top clips 
+  function getvideos(user_id) {
+    const fetchvideos = fetch('https://api.twitch.tv/helix/clips?broadcaster_id=' + user_id + '&first	=' + amount, {
+      'headers': {
+        'Client-ID': TWITCH_CLIENT_ID,
+        'Authorization': `Bearer ${oauthtoken}`
+      }
+    });
+
+    //process Twitch response
+    fetchvideos.then(response => {
+      if (response.status == 200) {
+        return ((response.json()))
+      } else if (response.status == 404 || response.status == 422) {
+        LBError("No clips found.")
+        return ("error")
+      } else {
+        LBError("Error. Invalid request, too many requests or Twitch server unavailable.")
+        return ("error")
+      }
+
+    }).then(data => {
+      if (data !== "error") {
+        //console.log(data)
+        if (data.data.length == 0) {
+          LBError("No clips found.")
+        } else {
+          if (data.data.length > 1) {
+            for (let clip_number = 0; clip_number < data.data.length; clip_number++) {
+              let clip_url = data.data[clip_number].id
+              variable_n = variable + clip_number
+              lioranboardclient.send('{"type":"MESSAGE","topic":"AddStack","name":"' + variable + '","position":"top","value":"' + clip_url + '"}')
+            }
+          } else {
+            let clip_url = data.data[0].id
+            lioranboardclient.send('{"type":"MESSAGE","topic":"SetValue","valuename":"' + variable + '","value":"' + clip_url + '","real":false}')
+          }
+        }
+      }
+    })
+  }
+}
+[insert_over]
+[buttons_0x0]
+activepress="0.000000"
+border_size="0.000000"
+combine="0.000000"
+type="websocketaction+"
+picture=""
+text="random clip"
+color="12632256.000000"
+button_id="19.000000"
+websocketdelay11="0.000000"
+websocketvalue8_11=""
+websocketvalue7_11=""
+websocketvalue6_11=""
+websocketvalue5_11=""
+websocketvalue4_11=""
+websocketvalue3_11=""
+websocketvalue2_11=""
+websocketvalue1_11="no need to use clear stack command, extension will do it automatically"
+websocketaction11="92.000000"
+websocketdelay10="1000.000000"
+websocketvalue8_10=""
+websocketvalue7_10=""
+websocketvalue6_10=""
+websocketvalue5_10=""
+websocketvalue4_10=""
+websocketvalue3_10=""
+websocketvalue2_10="{þurlþ:þhttps://clips.twitch.tv//$clip$/þ}"
+websocketvalue1_10="insert your browser source name in OBS"
+websocketaction10="62.000000"
+websocketdelay9="1000.000000"
+websocketvalue8_9=""
+websocketvalue7_9=""
+websocketvalue6_9=""
+websocketvalue5_9=""
+websocketvalue4_9=""
+websocketvalue3_9=""
+websocketvalue2_9="clip"
+websocketvalue1_9="clip"
+websocketaction9="78.000000"
+websocketdelay8="1000.000000"
+websocketvalue8_8=""
+websocketvalue7_8=""
+websocketvalue6_8=""
+websocketvalue5_8=""
+websocketvalue4_8="1"
+websocketvalue3_8="1"
+websocketvalue2_8="5"
+websocketvalue1_8="clip_size"
+websocketaction8="23.000000"
+websocketdelay7="0.000000"
+websocketvalue8_7=""
+websocketvalue7_7=""
+websocketvalue6_7=""
+websocketvalue5_7=""
+websocketvalue4_7=""
+websocketvalue3_7=""
+websocketvalue2_7=""
+websocketvalue1_7="retrieves a random clip and inserts it into a browser source in OBS"
+websocketaction7="92.000000"
+websocketdelay6="1000.000000"
+websocketvalue8_6=""
+websocketvalue7_6=""
+websocketvalue6_6=""
+websocketvalue5_6=""
+websocketvalue4_6=""
+websocketvalue3_6=""
+websocketvalue2_6="clip_size"
+websocketvalue1_6="clip"
+websocketaction6="77.000000"
+websocketdelay5="0.000000"
+websocketvalue8_5=""
+websocketvalue7_5=""
+websocketvalue6_5=""
+websocketvalue5_5=""
+websocketvalue4_5=""
+websocketvalue3_5=""
+websocketvalue2_5=""
+websocketvalue1_5="it is important to add some delay to let the extension retrieve all the clip urls"
+websocketaction5="92.000000"
+websocketdelay4="0.000000"
+websocketvalue8_4=""
+websocketvalue7_4=""
+websocketvalue6_4=""
+websocketvalue5_4="clip"
+websocketvalue4_4="10"
+websocketvalue3_4="/$oauth_token$/"
+websocketvalue2_4="dashducks"
+websocketvalue1_4="Get a top clip"
+websocketaction4="71.000000"
+websocketdelay3="0.000000"
+websocketvalue8_3=""
+websocketvalue7_3=""
+websocketvalue6_3=""
+websocketvalue5_3=""
+websocketvalue4_3=""
+websocketvalue3_3=""
+websocketvalue2_3=""
+websocketvalue1_3="variable = variable name for clip ID. If amount > 1, clip urls will be all added to a stack instead"
+websocketaction3="92.000000"
+websocketdelay2="0.000000"
+websocketvalue8_2=""
+websocketvalue7_2=""
+websocketvalue6_2=""
+websocketvalue5_2=""
+websocketvalue4_2=""
+websocketvalue3_2=""
+websocketvalue2_2=""
+websocketvalue1_2="amount = amount of clips to retrieve."
+websocketaction2="92.000000"
+websocketdelay1="0.000000"
+websocketvalue8_1=""
+websocketvalue7_1=""
+websocketvalue6_1=""
+websocketvalue5_1=""
+websocketvalue4_1=""
+websocketvalue3_1=""
+websocketvalue2_1=""
+websocketvalue1_1="oauth token = your Twitch token"
+websocketaction1="92.000000"
+websocketdelay0="0.000000"
+websocketvalue8_0=""
+websocketvalue7_0=""
+websocketvalue6_0=""
+websocketvalue5_0=""
+websocketvalue4_0=""
+websocketvalue3_0=""
+websocketvalue2_0=""
+websocketvalue1_0="broadcaster name = broadcaster to retrieve clips from"
+websocketaction0="92.000000"
+[configs]
+name="Twitch Get Clips"
+background_color="8947848.000000"
+grid_height="2.000000"
+grid_width="2.000000"

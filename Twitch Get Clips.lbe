@@ -37,6 +37,7 @@ function LBGetTopClip(oauthtoken, broadcastername, amount, variable) {
     }
   });
 
+
   //handle Twitch response and errors
   fetchID.then(response => {
       if (response.status == 200) {

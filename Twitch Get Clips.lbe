@@ -11,25 +11,27 @@ lioranboardclient.send('{
   "type":"MESSAGE",
   "topic":"ExtensionCommand",\
   "name":"Twitch Get Clips",\
-  "boxcount":4,\
+  "boxcount":5,\
   "boxname1":"broadcaster_name",\
   "boxtype1":"string",\
   "boxname2":"oauth_token",\
   "boxtype2":"string",\
   "boxname3":"amount",\
   "boxtype3":"string",\
-  "boxname4":"variable",\
-  "boxtype4":"string"\
+  "boxname4":"time|day|week|month|year|all|",\
+  "boxtype4":"string",\
+  "boxname5":"variable",
+  "boxtype5":"string"\
 }');
 
 
 [insert_hook]
 case "TwitchGetClips": {
-  LBGetTopClip(LioranBoardJSON.oauth_token, LioranBoardJSON.broadcaster_name, LioranBoardJSON.amount, LioranBoardJSON.variable)
+  LBGetTopClip(LioranBoardJSON.oauth_token, LioranBoardJSON.broadcaster_name, LioranBoardJSON.amount, LioranBoardJSON.time, LioranBoardJSON.variable)
 } break
 
 [insert_script]
-function LBGetTopClip(oauthtoken, broadcastername, amount, variable) {
+function LBGetTopClip(oauthtoken, broadcastername, amount, time, variable) {
   LBStackDelete(variable)
   if (amount == 0 || amount == "") {
     amount = 1 //if someone requests 0 clips, it auto defaults to 1

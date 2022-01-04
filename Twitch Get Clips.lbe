@@ -7,10 +7,27 @@ Get a top clip
  * @link: https://github.com/christinna9031/LB-Twitch-Get-Clips
  * -->
 [insert_command]
-lioranboardclient.send('{"type":"MESSAGE","topic":"ExtensionCommand","name":"Twitch Get Clips","boxcount":4,"boxname1":"broadcaster_name","boxtype1":"string", "boxname2":"oauth_token","boxtype2":"string","boxname3":"amount","boxtype3":"string","boxname4":"variable","boxtype4":"string"}');
+lioranboardclient.send('{
+  "type":"MESSAGE",
+  "topic":"ExtensionCommand",\
+  "name":"Twitch Get Clips",\
+  "boxcount":4,\
+  "boxname1":"broadcaster_name",\
+  "boxtype1":"string",\
+  "boxname2":"oauth_token",\
+  "boxtype2":"string",\
+  "boxname3":"amount",\
+  "boxtype3":"string",\
+  "boxname4":"variable",\
+  "boxtype4":"string"\
+}');
+
+
 [insert_hook]
-case "TwitchGetClips":{	LBGetTopClip(LioranBoardJSON.oauth_token,LioranBoardJSON.broadcaster_name,LioranBoardJSON.amount,LioranBoardJSON.variable)
-}break
+case "TwitchGetClips": {
+  LBGetTopClip(LioranBoardJSON.oauth_token, LioranBoardJSON.broadcaster_name, LioranBoardJSON.amount, LioranBoardJSON.variable)
+} break
+
 [insert_script]
 function LBGetTopClip(oauthtoken, broadcastername, amount, variable) {
   LBStackDelete(variable)

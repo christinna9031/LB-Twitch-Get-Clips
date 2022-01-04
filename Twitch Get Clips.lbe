@@ -1,14 +1,16 @@
 [extension_name]
 Get a top clip
+
 [insert_external]
 <div><p>Twitch Get Clips extension is installed.</p></div>
 <!--
- * @name: Twitch Get Clips, @version: 1.5, @author: Christinna#9031
+ * @name: Twitch Get Clips, @version: 1.6, @author: Christinna#9031, FelkonEx
  * @link: https://github.com/christinna9031/LB-Twitch-Get-Clips
  * -->
+
 [insert_command]
-lioranboardclient.send('{
-  "type":"MESSAGE",
+lioranboardclient.send('{\
+  "type":"MESSAGE",\
   "topic":"ExtensionCommand",\
   "name":"Twitch Get Clips",\
   "boxcount":5,\
@@ -18,20 +20,19 @@ lioranboardclient.send('{
   "boxtype2":"string",\
   "boxname3":"amount",\
   "boxtype3":"string",\
-  "boxname4":"time|day|week|month|year|all|",\
+  "boxname4":"timeframe|day|week|month|year|any|",\
   "boxtype4":"string",\
-  "boxname5":"variable",
+  "boxname5":"variable",\
   "boxtype5":"string"\
 }');
 
-
 [insert_hook]
 case "TwitchGetClips": {
-  LBGetTopClip(LioranBoardJSON.oauth_token, LioranBoardJSON.broadcaster_name, LioranBoardJSON.amount, LioranBoardJSON.time, LioranBoardJSON.variable)
+  LBGetTopClip(LioranBoardJSON.oauth_token, LioranBoardJSON.broadcaster_name, LioranBoardJSON.amount, LioranBoardJSON.timeframe, LioranBoardJSON.variable)
 } break
 
 [insert_script]
-function LBGetTopClip(oauthtoken, broadcastername, amount, time, variable) {
+function LBGetTopClip(oauthtoken, broadcastername, amount, timeframe, variable) {
   LBStackDelete(variable)
   if (amount == 0 || amount == "") {
     amount = 1 //if someone requests 0 clips, it auto defaults to 1
@@ -41,9 +42,9 @@ function LBGetTopClip(oauthtoken, broadcastername, amount, time, variable) {
 
   //function to execute when various errors come up
   function LBError(msg) {
-    msg = "Top Clip Extension: " + msg
-    lioranboardclient.send('{"type":"MESSAGE","topic":"SetValue","valuename":"' + variable + '","value":"error","real":false}')
-    lioranboardclient.send('{"type":"MESSAGE","topic":"AlertMessage","message":"' + msg + '"}')
+    msg = "Top Clip Extension: " + msg;
+    lioranboardclient.send('{"type":"MESSAGE","topic":"SetValue","valuename":"' + variable + '","value":"error","real":false}');
+    lioranboardclient.send('{"type":"MESSAGE","topic":"AlertMessage","message":"' + msg + '"}');
   }
 
   //send request to Twitch to fetch the broadcaster's ID
@@ -58,13 +59,13 @@ function LBGetTopClip(oauthtoken, broadcastername, amount, time, variable) {
   //handle Twitch response and errors
   fetchID.then(response => {
       if (response.status == 200) {
-        return ((response.json()))
+        return ((response.json()));
       } else if (response.status == 401) {
-        LBError("Error. Bad OAuth token.")
-        return ("error")
+        LBError("Error. Bad OAuth token.");
+        return ("error");
       } else {
-        LBError("Error. User ID not found or Twitch server unavailable.")
-        return ("error")
+        LBError("Error. User ID not found or Twitch server unavailable.");
+        return ("error");
       }
     })
 
@@ -72,56 +73,89 @@ function LBGetTopClip(oauthtoken, broadcastername, amount, time, variable) {
       //console.log(data)
       if (data !== "error") {
         if (data.data.length > 0) {
-          let user_id = data.data[0].id
-          getvideos(user_id)
+          let user_id = data.data[0].id;
+          getvideos(user_id);
         } else {
-          LBError("User not found.")
+          LBError("User not found.");
         }
       }
     });
 
   //send request to Twitch for x amount of top clips 
   function getvideos(user_id) {
-    const fetchvideos = fetch('https://api.twitch.tv/helix/clips?broadcaster_id=' + user_id + '&first	=' + amount, {
-      'headers': {
-        'Client-ID': TWITCH_CLIENT_ID,
-        'Authorization': `Bearer ${oauthtoken}`
+
+    //set-up start & end timeframe to fetch clips between.
+    // Defaults start to 10 years if "any" specified
+    // Times use RFC3339 format.
+    
+    let now = new Date();
+    let endedAt = new Date().toISOString();
+
+    switch(timeframe) {
+      case "day":
+        now.setDate(now.getDate() - 1);
+        break;
+      case "week":
+        now.setDate(now.getDate() - 7);
+        break;
+      case "month":
+        now.setDate(now.getDate() - 31);
+        break;
+      case "year":
+        now.setDate(now.getDate() - 365);
+        break;
+      default:
+        now.setDate(now.getDate() - 3650);
+    }
+    let startedAt = now.toISOString();
+
+    const fetchvideos = fetch(
+      'https://api.twitch.tv/helix/clips?broadcaster_id=' + user_id + 
+      '&first=' + amount + 
+      '&started_at=' + startedAt + 
+      '&ended_at=' + endedAt 
+      ,{
+        'headers': {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${oauthtoken}`
+        }
       }
-    });
+    );
 
     //process Twitch response
     fetchvideos.then(response => {
       if (response.status == 200) {
-        return ((response.json()))
+        return ((response.json()));
       } else if (response.status == 404 || response.status == 422) {
-        LBError("No clips found.")
-        return ("error")
+        LBError("No clips found.");
+        return ("error");
       } else {
-        LBError("Error. Invalid request, too many requests or Twitch server unavailable.")
-        return ("error")
+        LBError("Error. Invalid request, too many requests or Twitch server unavailable.");
+        return ("error");
       }
 
     }).then(data => {
       if (data !== "error") {
         //console.log(data)
         if (data.data.length == 0) {
-          LBError("No clips found.")
+          LBError("No clips found.");
         } else {
           if (data.data.length > 1) {
             for (let clip_number = 0; clip_number < data.data.length; clip_number++) {
-              let clip_url = data.data[clip_number].id
-              variable_n = variable + clip_number
-              lioranboardclient.send('{"type":"MESSAGE","topic":"AddStack","name":"' + variable + '","position":"top","value":"' + clip_url + '"}')
+              let clip_url = data.data[clip_number].id;
+              variable_n = variable + clip_number;
+              lioranboardclient.send('{"type":"MESSAGE","topic":"AddStack","name":"' + variable + '","position":"top","value":"' + clip_url + '"}');
             }
           } else {
-            let clip_url = data.data[0].id
-            lioranboardclient.send('{"type":"MESSAGE","topic":"SetValue","valuename":"' + variable + '","value":"' + clip_url + '","real":false}')
+            let clip_url = data.data[0].id;
+            lioranboardclient.send('{"type":"MESSAGE","topic":"SetValue","valuename":"' + variable + '","value":"' + clip_url + '","real":false}');
           }
         }
       }
     })
   }
 }
+
 [insert_over]
 [force]
 version="1.44"
